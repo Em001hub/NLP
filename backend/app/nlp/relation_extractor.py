@@ -9,7 +9,7 @@ from typing import List, Dict, Tuple
 try:
     import stanza
     HAS_STANZA = True
-except ImportError:
+except (ImportError, Exception):
     stanza = None
     HAS_STANZA = False
 

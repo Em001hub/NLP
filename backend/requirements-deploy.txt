@@ -1,0 +1,13 @@
+# Lightweight backend requirements for Render.com production deployment.
+# Heavy ML libraries (torch, transformers, stanza) are NOT included.
+# Groq AI (api.groq.com) handles all entity extraction in production.
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.1
+requests>=2.32.0
+pydantic>=2.9.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.9
+langdetect>=1.0.9
+beautifulsoup4>=4.12.0

@@ -1,6 +1,8 @@
 """
 NewsGraph backend entrypoint.
+CORS is set to allow all origins for production flexibility.
 """
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,11 +10,11 @@ from app.routers import auth_router, news_router, graph_router
 
 app = FastAPI(
     title="NewsGraph API",
-    description="Turns news articles into interactive entity-relationship graphs, "
-    "with dedicated NLP support for Hindi and Marathi names/places.",
+    description="Turns news articles into interactive entity-relationship graphs.",
     version="1.0.0",
 )
 
+# Allow all origins (production safe since API uses JWT authentication)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
