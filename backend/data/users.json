@@ -1,0 +1,14 @@
+{
+  "admin123": {
+    "username": "admin123",
+    "hashed_password": "123456"
+  },
+  "admin": {
+    "username": "admin",
+    "hashed_password": "123456"
+  },
+  "1234@gmail.com": {
+    "username": "1234@gmail.com",
+    "hashed_password": "f6370c4e6f40c15c0c569ef5ba073dd4$fd503892e796b8ae97d6bbd0acb83937549ddcbe4ae0ffda3db6377827b00177"
+  }
+}

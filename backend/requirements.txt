@@ -1,0 +1,13 @@
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-dotenv>=1.0.1
+requests>=2.32.0
+pydantic>=2.9.0
+python-jose[cryptography]>=3.3.0
+python-multipart>=0.0.9
+stanza>=1.9.0
+transformers>=4.44.0
+torch>=2.6.0
+sentencepiece>=0.2.0
+langdetect>=1.0.9
+beautifulsoup4>=4.12.0
