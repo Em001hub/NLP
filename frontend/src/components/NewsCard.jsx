@@ -1,13 +1,50 @@
 import React from "react";
 
+function formatRelativeDate(rawDate) {
+  if (!rawDate) return "Live Wire";
+
+  const date = new Date(rawDate);
+  if (isNaN(date.getTime())) return "Recent";
+
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  // Future or very recent (< 5 mins)
+  if (diffMs < 0 || diffMins < 5) {
+    return "Just now";
+  }
+  // Less than 60 mins
+  if (diffMins < 60) {
+    return `${diffMins}m ago`;
+  }
+  // Less than 24 hours
+  if (diffHours < 24) {
+    return `${diffHours}h ago`;
+  }
+  // Yesterday
+  if (diffDays === 1) {
+    return "Yesterday";
+  }
+  // Within a week
+  if (diffDays < 7) {
+    return `${diffDays}d ago`;
+  }
+
+  // Format with user's local date
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: date.getFullYear() !== now.getFullYear() ? "numeric" : undefined,
+  });
+}
+
 export default function NewsCard({ article, onVisualize, busy }) {
-  const publishedDate = article.publishedAt
-    ? new Date(article.publishedAt).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : null;
+  const rawDate = article.publishedAt || article.published_at || article.pubDate || article.date;
+  const displayDate = formatRelativeDate(rawDate);
+  const fullDateTitle = rawDate && !isNaN(new Date(rawDate).getTime()) ? new Date(rawDate).toLocaleString() : "";
 
   return (
     <article
@@ -64,11 +101,9 @@ export default function NewsCard({ article, onVisualize, busy }) {
           >
             {article.source || "WIRE"}
           </span>
-          {publishedDate && (
-            <span className="wire-label" style={{ fontSize: 10 }}>
-              {publishedDate}
-            </span>
-          )}
+          <span className="wire-label" style={{ fontSize: 10, color: "var(--neon-cyan)" }} title={fullDateTitle}>
+            🕒 {displayDate}
+          </span>
         </div>
 
         <h3
@@ -136,3 +171,4 @@ export default function NewsCard({ article, onVisualize, busy }) {
     </article>
   );
 }
+
