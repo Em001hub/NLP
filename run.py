@@ -10,6 +10,13 @@ import signal
 import time
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 ROOT_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = ROOT_DIR / "backend"
 FRONTEND_DIR = ROOT_DIR / "frontend"
@@ -28,7 +35,7 @@ def get_python_exe():
 
 def main():
     print("=" * 60)
-    print("🚀 STARTING NEWSGRAPH (Backend + Frontend)")
+    print("[*] STARTING NEWSGRAPH (Backend + Frontend)")
     print("=" * 60)
 
     python_exe = get_python_exe()

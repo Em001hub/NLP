@@ -17,9 +17,10 @@ from ..config import BASE_DIR, GROQ_API_KEY
 logger = logging.getLogger(__name__)
 
 GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions"
-# Active high-throughput models on Groq
-DEFAULT_MODEL = "openai/gpt-oss-120b"
+# Active high-throughput, low-latency models on Groq
+DEFAULT_MODEL = "qwen/qwen3.8-27b"
 FALLBACK_MODEL = "openai/gpt-oss-20b"
+TERTIARY_MODEL = "openai/gpt-oss-120b"
 
 
 def _get_api_key(custom_key: Optional[str] = None) -> Optional[str]:
@@ -46,9 +47,13 @@ def extract_graph_with_groq(
     custom_key: Optional[str] = None,
 ) -> Optional[dict]:
     """
-    Extracts a clean, simplified, and highly accurate knowledge graph using Groq AI.
-    Focuses on key people (full proper names with roles), organizations, key locations,
-    factual numbers/statistics, and clear direct relationships (not an over-connected spiderweb).
+    Extracts a clean, high-precision, and interconnected knowledge graph using Groq AI.
+    Accurately captures:
+    - Full proper names with titles (e.g. 'Justice Yogesh Khanna', 'Subhash Chandra', 'Venu Srinivasan')
+    - Canonical entity consolidation (never split first/last names or titles)
+    - Specific roles and occupations for people
+    - Meaningful, descriptive action verbs for relationships (e.g. 'appealed against', 'presided by', 'chaired')
+    - Connected graph topology without isolated key entities
     """
     api_key = _get_api_key(custom_key)
     if not api_key:
@@ -56,20 +61,22 @@ def extract_graph_with_groq(
 
     system_prompt = (
         "You are an expert Cyber-Intelligence Knowledge Graph Engine for news analysis.\n"
-        "Your task is to extract a CLEAN, HIGH-PRECISION, and SIMPLIFIED knowledge graph from the given news article.\n\n"
+        "Your task is to extract a HIGH-PRECISION, FAST, and MEANINGFULLY CONNECTED knowledge graph from the given news article.\n\n"
         "CRITICAL EXTRACTION RULES:\n"
-        "1. PEOPLE'S FULL NAMES (PERSON):\n"
-        "   - Always extract FULL proper names (e.g. 'Richa Chadha', 'Salman Khan', 'Narendra Modi').\n"
-        "   - NEVER split names into fragments (e.g. NEVER make 'Rich' and 'a Chadha').\n"
-        "   - NEVER create duplicate nodes for the same person.\n"
-        "   - In the 'role' field, specify their occupation or role (e.g. 'Bollywood Actress', 'Actor / Host', 'Politician').\n"
-        "2. TOP KEY ENTITIES ONLY (Maximum 6 to 12 entities):\n"
-        "   - Extract only the core entities: Key People, Key Organizations, Locations, Vital Numbers/Stats (e.g. 'Season 20', '1,090 casualties').\n"
-        "   - Avoid trivial or noisy nodes.\n"
-        "3. CLEAN DIRECT RELATIONSHIPS (Maximum 4 to 12 edges):\n"
-        "   - Create only direct, meaningful relationships between entities using concise action verbs (e.g. 'praised', 'spoke against', 'hosted', 'investigating').\n"
-        "   - Keep the graph clean and easy to read. Do NOT interconnect every node to every other node.\n"
-        "4. Output strictly valid JSON matching the schema."
+        "1. FULL PROPER NAMES & TITLES (PERSON):\n"
+        "   - Always extract complete full proper names (e.g. 'Subhash Chandra', 'Justice Yogesh Khanna', 'Venu Srinivasan', 'Barun Mitra').\n"
+        "   - NEVER separate titles into standalone entities (e.g. NEVER make 'Justice' or 'Judge' or 'Dr' its own entity).\n"
+        "   - Consolidate references: if an individual is referred to by first name, last name, or pronoun, map back to their single canonical full name node.\n"
+        "   - NEVER create duplicate or fragmented nodes for the same person.\n"
+        "   - Always populate the 'role' field with their designation (e.g. 'Former Zee Chairman', 'NCLAT Judge', 'Chairman Emeritus of TVS Motor').\n"
+        "2. CORE KEY ENTITIES (8 to 15 nodes):\n"
+        "   - Extract key Persons, Organizations, Tribunals/Courts, Locations, and vital Numbers/Monetary stats (e.g. '₹6.5 crore', '66 percent stake').\n"
+        "   - Exclude trivial noise or generic buzzwords.\n"
+        "3. ACCURATE, RICH RELATIONSHIPS (8 to 16 edges):\n"
+        "   - Connect key entities with accurate, descriptive action verbs (e.g. 'appealed against', 'presided over', 'chaired by', 'holds majority stake in', 'succeeded', 'represented lenders against', 'stayed assets of').\n"
+        "   - AVOID vague 'associated with' or 'connected with' whenever a clear action or role relationship exists.\n"
+        "   - Ensure major people are linked to their organizations, courts, or counterparts so key entities are NOT orphaned.\n"
+        "4. STRICT JSON OUTPUT matching the schema."
     )
 
     json_schema_prompt = """
@@ -85,9 +92,9 @@ Respond with a JSON object strictly following this schema:
       "language": "en",
       "mentions": 1,
       "confidence": 0.99,
-      "role": "Role or designation (e.g. Bollywood Actress, Show Host)",
-      "facts": ["Key factual statement about this entity"],
-      "numbers": ["Key numbers associated if any"]
+      "role": "Role or designation (e.g. NCLAT Judge, Chairman Emeritus)",
+      "facts": ["Key factual statement about this entity from the article"],
+      "numbers": ["Key numbers or figures associated if any"]
     }
   ],
   "edges": [
@@ -95,7 +102,7 @@ Respond with a JSON object strictly following this schema:
       "id": "e_1",
       "source": "n_1",
       "target": "n_2",
-      "relation": "action verb (e.g. praised, spoke against, hosted)",
+      "relation": "specific action verb (e.g. appealed to, presided over, chaired by, holds stake in)",
       "sentence": "Direct concise sentence stating this relation",
       "weight": 2,
       "facts": []
@@ -119,20 +126,23 @@ Respond with a JSON object strictly following this schema:
         ],
         "response_format": {"type": "json_object"},
         "temperature": 0.1,
-        "max_tokens": 3000,
+        "max_tokens": 2500,
     }
 
     try:
-        resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=20)
+        resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=12)
         if resp.status_code != 200:
             payload["model"] = FALLBACK_MODEL
-            resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=15)
+            resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=12)
             if resp.status_code != 200:
-                payload["model"] = "qwen/qwen3.8-27b"
+                payload["model"] = TERTIARY_MODEL
                 resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=15)
-            resp.raise_for_status()
+        resp.raise_for_status()
 
         data = resp.json()
+        if "choices" not in data or not data["choices"]:
+            logger.warning("Groq extraction: unexpected response body: %s", str(data)[:300])
+            return None
         raw_content = data["choices"][0]["message"]["content"]
         parsed = json.loads(raw_content)
 
@@ -286,11 +296,17 @@ def ask_graph_question(
         }
 
         try:
-            resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=15)
+            resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=10)
             if resp.status_code != 200:
                 payload["model"] = FALLBACK_MODEL
-                resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=12)
+                resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=10)
+                if resp.status_code != 200:
+                    payload["model"] = TERTIARY_MODEL
+                    resp = requests.post(GROQ_ENDPOINT, headers=headers, json=payload, timeout=15)
+            resp.raise_for_status()
             data = resp.json()
+            if "choices" not in data or not data["choices"]:
+                raise ValueError(f"Unexpected Groq response: {str(data)[:200]}")
             parsed = json.loads(data["choices"][0]["message"]["content"])
             return {
                 "answer": parsed.get("answer", "No direct answer generated."),

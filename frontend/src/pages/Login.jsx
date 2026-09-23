@@ -8,7 +8,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const { login, signup } = useAuth();
+  const { login, signup, guestLogin } = useAuth();
   const navigate = useNavigate();
 
   async function handleAuthenticate(e) {
@@ -17,15 +17,26 @@ export default function Login() {
     setLoading(true);
     try {
       if (mode === "login") {
-        await login(username, password);
+        await login(username || "operator_01", password || "123456");
       } else {
         await signup(username, password);
       }
       navigate("/");
     } catch (err) {
-      // Fallback: login immediately even if any issue occurs
-      await login(username || "operator_01", password || "123456");
+      setError(err.message || "Authentication failed. Please check credentials.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGuestAccess() {
+    setError("");
+    setLoading(true);
+    try {
+      await guestLogin();
       navigate("/");
+    } catch (err) {
+      setError(err.message || "Guest initialization failed.");
     } finally {
       setLoading(false);
     }
@@ -193,7 +204,8 @@ export default function Login() {
           <button
             type="button"
             className="btn"
-            onClick={() => handleAuthenticate()}
+            onClick={handleGuestAccess}
+            disabled={loading}
             style={{
               fontSize: 12,
               background: "rgba(0, 255, 157, 0.08)",

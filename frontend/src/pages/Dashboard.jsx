@@ -258,18 +258,19 @@ export default function Dashboard() {
                 Extract & Graph Any News Article from URL
               </h3>
             </div>
-            <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 16 }}>
-              Paste any article link from BBC, CNN, Times of India, Reuters, NDTV, or any global news site. The backend will scrape the clean article text and construct a fact-rich neural graph with accurate names and numbers.
+            <p style={{ fontSize: 13, color: "var(--text-dim)", marginBottom: 8 }}>
+              Works best with: <strong style={{ color: "var(--neon-cyan)" }}>BBC, CNN, Times of India, The Hindu, Al Jazeera, AP News, The Guardian</strong>.
+              Sites like Reuters/NDTV block scrapers — use the <strong style={{ color: "var(--neon-green)" }}>📝 Paste Text</strong> tab for those.
             </p>
 
             <form onSubmit={handleAnalyzeUrl} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <input
                 type="url"
                 required
-                placeholder="https://www.reuters.com/world/news-article-slug..."
+                placeholder="https://www.bbc.com/news/...  or  https://timesofindia.indiatimes.com/..."
                 value={inputUrl}
                 onChange={(e) => setInputUrl(e.target.value)}
-                style={{ flex: "1 1 340px", fontFamily: "var(--font-mono)", fontSize: 13.5 }}
+                style={{ flex: "1 1 340px", fontFamily: "var(--font-mono)", fontSize: 13 }}
               />
               <button className="btn btn-primary" type="submit" disabled={busyId === "url"}>
                 {busyId === "url" ? (
@@ -397,6 +398,19 @@ export default function Dashboard() {
                 }}
               >
                 <strong>ERROR //</strong> {error}
+                {(activeTab === "url" && (error.toLowerCase().includes("block") || error.toLowerCase().includes("paywall") || error.toLowerCase().includes("forbidden") || error.toLowerCase().includes("access denied") || error.toLowerCase().includes("scraper") || error.toLowerCase().includes("extract"))) && (
+                  <div style={{ marginTop: 8, fontSize: 12, fontFamily: "var(--font-mono)", color: "var(--text-dim)" }}>
+                    💡 TIP: Switch to{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setActiveTab("text"); setError(""); }}
+                      style={{ background: "none", border: "none", color: "var(--neon-green)", cursor: "pointer", padding: 0, fontWeight: 700, textDecoration: "underline", fontSize: 12 }}
+                    >
+                      📝 Paste Text
+                    </button>{" "}
+                    and paste the article content directly instead.
+                  </div>
+                )}
               </div>
             )}
 

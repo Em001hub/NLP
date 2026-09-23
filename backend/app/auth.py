@@ -24,6 +24,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 DEFAULT_ACCOUNTS = {
     "admin123": "123456",
     "admin": "123456",
+    "operator_01": "123456",
+    "analyst_01": "123456",
+    "guest": "guest123",
+    "demo": "123456",
 }
 
 

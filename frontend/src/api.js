@@ -1,9 +1,14 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+let rawBase = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000";
+if (rawBase.includes("localhost")) {
+  rawBase = rawBase.replace("localhost", "127.0.0.1");
+}
+const API_BASE = rawBase;
 
 function authHeaders() {
   const token = localStorage.getItem("ng_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
+
 
 function getStoredGroqKey() {
   return localStorage.getItem("ng_groq_key") || "";
@@ -16,7 +21,11 @@ async function handle(res) {
       const body = await res.json();
       detail = body.detail || JSON.stringify(body);
     } catch (_) {}
-    throw new Error(detail);
+    if (res.status === 401) {
+      localStorage.removeItem("ng_token");
+      localStorage.removeItem("ng_username");
+    }
+    throw new Error(detail || "Request failed");
   }
   return res.json();
 }
@@ -27,6 +36,13 @@ export const api = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
+    });
+    return handle(res);
+  },
+  async guest() {
+    const res = await fetch(`${API_BASE}/api/auth/guest`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
     });
     return handle(res);
   },

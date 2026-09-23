@@ -38,8 +38,16 @@ def analyze_url(req: ScrapeUrlRequest, username: str = Depends(auth.get_current_
         raise HTTPException(400, "No URL provided")
     try:
         scraped = scrape_article_from_url(url)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     except Exception as e:
-        raise HTTPException(400, f"Failed to extract news from URL: {str(e)}")
+        raise HTTPException(502, f"Scraper error for URL: {str(e)}")
+
+    if not scraped.get("text") or len(scraped["text"]) < 50:
+        raise HTTPException(400,
+            "The article at this URL appears to be empty or blocked. "
+            "Try the 'Paste Text' tab to paste the article content directly."
+        )
 
     result = build_graph(
         text=scraped["text"],
